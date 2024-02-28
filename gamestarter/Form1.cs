@@ -1,10 +1,11 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Windows.Forms;
+using System.Linq;
+using System.Net.NetworkInformation;
 
 namespace gamestarter
 {
@@ -16,6 +17,9 @@ namespace gamestarter
         private FlowLayoutPanel flowLayoutPanelRight; // Add declaration
         private System.Windows.Forms.Timer timer;
         private OpenFileDialog openFileDialog; // Add OpenFileDialog declaration
+        private string screenshotFolderPath = "Screenshots"; // Folder for screenshots
+        private string highScoreFilePath = "HighScores/highscore.txt"; // File path for high scores
+
 
         public Form1()
         {
@@ -25,6 +29,89 @@ namespace gamestarter
             SetModernBackground();
             InitializeOpenFileDialog(); // Initialize OpenFileDialog
             LoadGamePaths(); // Load saved game paths
+            TakeScreenshot(); // Capture screenshot when the form initializes
+            InitializeDirectories(); // Create directories if they don't exist
+
+
+            // Display the current IP address when the form loads
+            ShowCurrentIPAddress();
+        }
+
+
+        private void ShowCurrentIPAddress()
+        {
+            // Get all network interfaces
+            var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+            // Filter out loopback and disconnected interfaces
+            var activeInterfaces = networkInterfaces.Where(ni =>
+                ni.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
+                ni.OperationalStatus == OperationalStatus.Up);
+
+            // Get the first active interface
+            var activeInterface = activeInterfaces.FirstOrDefault();
+
+            // Check if an active interface is found
+            if (activeInterface != null)
+            {
+                // Get the IP properties of the active interface
+                var ipProperties = activeInterface.GetIPProperties();
+
+                // Get the IPv4 address
+                var ipAddress = ipProperties.UnicastAddresses
+                    .FirstOrDefault(addr => addr.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)?
+                    .Address.ToString();
+
+                // Display the IP address on the label
+                lblIPAddress.Text = "IP Address: " + ipAddress;
+            }
+            else
+            {
+                // If no active interface is found, display a message on the label
+                lblIPAddress.Text = "No active network connection";
+            }
+        }
+
+
+        private void InitializeDirectories()
+        {
+            // Create the directory for screenshots if it doesn't exist
+            if (!Directory.Exists(screenshotFolderPath))
+            {
+                Directory.CreateDirectory(screenshotFolderPath);
+            }
+
+            // Create the directory for high scores if it doesn't exist
+            string highScoreDirectory = Path.GetDirectoryName(highScoreFilePath);
+            if (!Directory.Exists(highScoreDirectory))
+            {
+                Directory.CreateDirectory(highScoreDirectory);
+            }
+        }
+
+        private void TakeScreenshot()
+        {
+            // Get the primary screen bounds
+            Rectangle bounds = Screen.PrimaryScreen.Bounds;
+
+            // Create a bitmap to store the screenshot
+            Bitmap bitmap = new Bitmap(bounds.Width, bounds.Height);
+
+            // Create a graphics object from the bitmap
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                // Capture the screen
+                g.CopyFromScreen(Point.Empty, Point.Empty, bounds.Size);
+            }
+
+            // Generate a unique filename for the screenshot
+            string fileName = $"screenshot_{DateTime.Now:yyyyMMddHHmmss}.png";
+
+            // Combine the folder path with the filename
+            string filePath = Path.Combine(screenshotFolderPath, fileName);
+
+            // Save the screenshot
+            bitmap.Save(filePath, System.Drawing.Imaging.ImageFormat.Png);
         }
 
         private void InitializeOpenFileDialog()
@@ -36,25 +123,18 @@ namespace gamestarter
             openFileDialog.CheckPathExists = true;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         private void InitializeUI()
         {
-            // Create FlowLayoutPanel for left and right controls
-            flowLayoutPanelLeft = new FlowLayoutPanel();
-            flowLayoutPanelLeft.FlowDirection = FlowDirection.TopDown;
-            flowLayoutPanelLeft.Dock = DockStyle.Left;
-            flowLayoutPanelLeft.AutoScroll = false;
-            flowLayoutPanelLeft.WrapContents = false;
-            flowLayoutPanelLeft.Width = 50;
-            flowLayoutPanelLeft.BackColor = Color.FromArgb(64, 64, 64); // Darker gray
-            Controls.Add(flowLayoutPanelLeft);
 
             flowLayoutPanelRight = new FlowLayoutPanel(); // Initialize flowLayoutPanelRight
             flowLayoutPanelRight.FlowDirection = FlowDirection.TopDown;
             flowLayoutPanelRight.Dock = DockStyle.Right;
-            flowLayoutPanelRight.AutoScroll = false;
+            flowLayoutPanelRight.AutoScroll = true; // Enable vertical scrollbar only
             flowLayoutPanelRight.WrapContents = false;
-            flowLayoutPanelRight.Width = 250;
-
+            flowLayoutPanelRight.Width = 501;
 
             Controls.Add(flowLayoutPanelRight);
 
@@ -84,7 +164,7 @@ namespace gamestarter
 
         private void btnAddGame_Click(object sender, EventArgs e)
         {
-            if (buttonCount >= 4) // CAHNGE NUMBER OF BUTTONS IN ONE ROW
+            if (buttonCount >= 4)
             {
                 MessageBox.Show("Maximum button limit reached. No more buttons can be added.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -106,7 +186,7 @@ namespace gamestarter
                 // Check if the game name or file path is empty
                 if (string.IsNullOrEmpty(gameName))
                 {
-                    MessageBox.Show("Please enter the game name.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Please enter the name.", "Name missing", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
@@ -134,9 +214,9 @@ namespace gamestarter
         {
             // Create a table layout panel to hold the game button, open folder button, and delete button
             TableLayoutPanel tableLayout = new TableLayoutPanel();
-            tableLayout.Width = 250; // Adjust the width as needed
-            tableLayout.Height = 105;
-            tableLayout.ColumnCount = 4;
+            tableLayout.Width = 478; // Adjust the width as needed
+            tableLayout.Height = 83;
+            tableLayout.ColumnCount = 40;
             tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
             tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
             tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
@@ -144,21 +224,21 @@ namespace gamestarter
             // Create the game button
             Button button = new Button();
             button.Text = gameName;
-            button.Width = 100;
-            button.Height = 105;
+            button.Width = 150;
+            button.Height = 80;
             button.Margin = new Padding(5);
             button.BackColor = Color.FromArgb(255, 255, 255); // White
             button.Click += (s, ev) => LaunchGame(gameName);
-            button.MouseEnter += Button_MouseEnter;
-            button.MouseLeave += Button_MouseLeave;
+
+            infoLabel.Hide();
 
             // Create the open folder button
             Button openFolderButton = new Button();
             openFolderButton.Text = "Open Folder";
-            openFolderButton.Width = 80;
-            openFolderButton.Height = 105;
+            openFolderButton.Width = 150;
+            openFolderButton.Height = 80;
             openFolderButton.Margin = new Padding(5);
-            openFolderButton.BackColor = Color.FromArgb(209, 177, 201); // Blue
+            openFolderButton.BackColor = Color.FromArgb(203, 247, 246); // Blue
             openFolderButton.Click += (s, ev) =>
             {
                 // Get the directory containing the game executable
@@ -171,10 +251,10 @@ namespace gamestarter
             // Create the delete button
             Button deleteButton = new Button();
             deleteButton.Text = "Delete";
-            deleteButton.Width = 80;
-            deleteButton.Height = 105;
+            deleteButton.Width = 150;
+            deleteButton.Height = 80;
             deleteButton.Margin = new Padding(5);
-            deleteButton.BackColor = Color.FromArgb(255, 186, 186); // Red
+            deleteButton.BackColor = Color.FromArgb(247, 236, 203); // Red
             deleteButton.Click += (s, ev) =>
             {
                 // Remove the game button and its path from the dictionary and the file
@@ -194,20 +274,6 @@ namespace gamestarter
             flowLayoutPanelRight.Controls.Add(tableLayout);
 
             // Your logic to update currentRow and currentColumn...
-        }
-
-        private void Button_MouseEnter(object sender, EventArgs e)
-        {
-            // Increase the size of the button slightly when mouse enters
-            Button button = (Button)sender;
-            button.Size = new Size(button.Width + 5, button.Height + 5);
-        }
-
-        private void Button_MouseLeave(object sender, EventArgs e)
-        {
-            // Revert the size of the button back to the original when mouse leaves
-            Button button = (Button)sender;
-            button.Size = new Size(button.Width - 5, button.Height - 5);
         }
 
 
@@ -290,6 +356,23 @@ namespace gamestarter
                     writer.WriteLine(entry.Key + "|" + entry.Value);
                 }
             }
+        }
+
+        private void newform_Click(object sender, EventArgs e)
+        {
+            var myForm = new trollform();
+            myForm.Show();
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Notesbttn_Click(object sender, EventArgs e)
+        {
+            var myForm = new penis();
+            myForm.Show();
         }
     }
 }
