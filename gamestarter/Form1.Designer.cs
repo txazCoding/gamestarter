@@ -177,7 +177,6 @@
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximumSize = new Size(916, 489);
             MinimumSize = new Size(416, 489);
-            Name = "Form1";
             Opacity = 0.98D;
             ShowIcon = false;
             ShowInTaskbar = false;
