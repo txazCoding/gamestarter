@@ -64,13 +64,13 @@
             // 
             newform.BackColor = Color.White;
             newform.FlatStyle = FlatStyle.Flat;
-            newform.Font = new Font("Tahoma", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            newform.ForeColor = Color.Beige;
-            newform.Image = Properties.Resources.bird;
+            newform.Font = new Font("Tahoma", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            newform.ForeColor = Color.Black;
             newform.Location = new Point(12, 371);
             newform.Name = "newform";
             newform.Size = new Size(87, 65);
             newform.TabIndex = 5;
+            newform.Text = "Flappy Bird";
             newform.UseVisualStyleBackColor = false;
             newform.Click += newform_Click;
             // 
@@ -128,6 +128,7 @@
             // 
             Notesbttn.BackColor = Color.White;
             Notesbttn.FlatStyle = FlatStyle.Flat;
+            Notesbttn.Font = new Font("Tahoma", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
             Notesbttn.Location = new Point(307, 374);
             Notesbttn.Name = "Notesbttn";
             Notesbttn.Size = new Size(87, 65);
@@ -176,6 +177,7 @@
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximumSize = new Size(916, 489);
             MinimumSize = new Size(416, 489);
+            Name = "Form1";
             Opacity = 0.98D;
             ShowIcon = false;
             ShowInTaskbar = false;
